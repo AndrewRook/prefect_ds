@@ -1,11 +1,19 @@
-from prefect.core.task import Task
+import typing
+
 from prefect.engine.state import State, Success
 from prefect.engine.result import Result
 from prefect.core.edge import Edge
-import typing
 
-def disk_state_handler(task: Task, old_state: State, new_state: State) -> State:
+from prefect_ds.task_runner import DSTaskRunner
+
+
+def checkpoint_handler(task: DSTaskRunner, old_state: State, new_state: State) -> State:
     if task.task.checkpoint and old_state.is_pending() and new_state.is_running():
+        if not hasattr(task, "upstream_states"):
+            raise AttributeError(
+                "upstream_states not found in task runner. Make sure to use "
+                "prefect_ds.task_runner.DSTaskRunner."
+            )
         input_mapping = _create_input_mapping(task.upstream_states)
         try:
             data = task.task.result_handler.read(input_mapping=input_mapping)
@@ -16,12 +24,10 @@ def disk_state_handler(task: Task, old_state: State, new_state: State) -> State:
         # task.task.checkpoint = False # Doesn't work with mapped tasks :(
         return state
 
-
     if task.task.checkpoint and old_state.is_running() and new_state.is_successful():
         input_mapping = _create_input_mapping(task.upstream_states)
         task.task.result_handler.write(new_state.result, input_mapping=input_mapping)
 
-    #breakpoint()
     return new_state
 
 
