@@ -1,12 +1,34 @@
+import pytest
+
 from prefect.core.edge import Edge
-from prefect.engine.state import State
 from prefect.core.task import Task
+from prefect.engine.state import State, Pending, Running
+from prefect.engine.task_runner import TaskRunner
 
 import prefect_ds.checkpoint_handler as dsh
 
+from prefect_ds.pandas_result_handler import PandasResultHandler
 
-class TestDiskStateHandler:
-    pass
+
+class TestCheckPointHandler:
+    def test_errors_when_regular_runner_is_used(self):
+        task = Task(name="Task", result_handler=PandasResultHandler("dummy.csv"))
+        task_runner = TaskRunner(task)
+        old_state = Pending()
+        new_state = Running()
+
+        with pytest.raises(AttributeError):
+            dsh.checkpoint_handler(task_runner, old_state, new_state)
+
+    @pytest.mark.xfail()
+    def test_does_not_look_for_file_when_no_result_handler_given(self):
+        assert False
+
+    @pytest.mark.xfail()
+    def test_raises_appropriate_error_when_incompatible_handler_given(self):
+        assert False
+
+
 
 class TestCreateInputMapping:
     def test_returns_empty_dict_when_no_upstream_states_given(self):

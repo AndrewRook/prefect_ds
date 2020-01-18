@@ -27,7 +27,7 @@ class PandasResultHandler(ResultHandler):
         self.write_kwargs = write_kwargs if write_kwargs is not None else {}
         super().__init__()
 
-    def read(self, _: typing.Optional = None, input_mapping=None) -> pd.DataFrame:
+    def read(self, *, input_mapping=None) -> pd.DataFrame:
         input_mapping = {} if input_mapping is None else input_mapping
         path_string = str(self.path).format(**input_mapping)
         self.logger.debug("Starting to read result from {}...".format(path_string))

@@ -30,5 +30,5 @@ class TestReadWrite:
             "two": [4, 5, 6]
         })
         handler.write(data)
-        read_data = handler.read(data)
+        read_data = handler.read()
         pd.testing.assert_frame_equal(data, read_data)

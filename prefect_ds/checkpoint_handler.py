@@ -7,26 +7,25 @@ from prefect.core.edge import Edge
 from prefect_ds.task_runner import DSTaskRunner
 
 
-def checkpoint_handler(task: DSTaskRunner, old_state: State, new_state: State) -> State:
-    if task.task.checkpoint and old_state.is_pending() and new_state.is_running():
-        if not hasattr(task, "upstream_states"):
+def checkpoint_handler(task_runner: DSTaskRunner, old_state: State, new_state: State) -> State:
+    if task_runner.result_handler is not None and old_state.is_pending() and new_state.is_running():
+        if not hasattr(task_runner, "upstream_states"):
             raise AttributeError(
                 "upstream_states not found in task runner. Make sure to use "
                 "prefect_ds.task_runner.DSTaskRunner."
             )
-        input_mapping = _create_input_mapping(task.upstream_states)
+        input_mapping = _create_input_mapping(task_runner.upstream_states)
         try:
-            data = task.task.result_handler.read(input_mapping=input_mapping)
+            data = task_runner.task.result_handler.read(input_mapping=input_mapping)
         except FileNotFoundError:
             return new_state
-        result = Result(value=data, result_handler=task.task.result_handler)
+        result = Result(value=data, result_handler=task_runner.task.result_handler)
         state = Success(result=result, message="Task loaded from disk.")
-        # task.task.checkpoint = False # Doesn't work with mapped tasks :(
         return state
 
-    if task.task.checkpoint and old_state.is_running() and new_state.is_successful():
-        input_mapping = _create_input_mapping(task.upstream_states)
-        task.task.result_handler.write(new_state.result, input_mapping=input_mapping)
+    if task_runner.result_handler is not None and old_state.is_running() and new_state.is_successful():
+        input_mapping = _create_input_mapping(task_runner.upstream_states)
+        task_runner.task.result_handler.write(new_state.result, input_mapping=input_mapping)
 
     return new_state
 
