@@ -4,9 +4,11 @@ from prefect.core.edge import Edge
 from prefect.core.task import Task
 from prefect.engine.state import State, Pending, Running
 from prefect.engine.task_runner import TaskRunner
+from prefect.engine.result_handlers.local_result_handler import LocalResultHandler
 
 import prefect_ds.checkpoint_handler as dsh
 
+from prefect_ds.task_runner import DSTaskRunner
 from prefect_ds.pandas_result_handler import PandasResultHandler
 
 
@@ -17,17 +19,37 @@ class TestCheckPointHandler:
         old_state = Pending()
         new_state = Running()
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError):
             dsh.checkpoint_handler(task_runner, old_state, new_state)
 
     @pytest.mark.xfail()
     def test_does_not_look_for_file_when_no_result_handler_given(self):
         assert False
 
-    @pytest.mark.xfail()
     def test_raises_appropriate_error_when_incompatible_handler_given(self):
+        task = Task(name="Task", result_handler=LocalResultHandler())
+        task_runner = DSTaskRunner(task)
+        task_runner.upstream_states = {}
+        old_state = Pending()
+        new_state = Running()
+        with pytest.raises(TypeError):
+            dsh.checkpoint_handler(task_runner, old_state, new_state)
+
+    @pytest.mark.xfail()
+    def test_raises_error_if_regular_checkpointing_is_set_to_be_used(self):
         assert False
 
+    @pytest.mark.xfail()
+    def test_writes_checkpointed_file_to_disk_on_success(self):
+        assert False
+
+    @pytest.mark.xfail()
+    def test_does_not_write_checkpoint_file_to_disk_on_failure(self):
+        assert False
+
+    @pytest.mark.xfail()
+    def test_does_not_write_checkpoint_file_to_disk_when_no_handler_given(self):
+        assert False
 
 
 class TestCreateInputMapping:
