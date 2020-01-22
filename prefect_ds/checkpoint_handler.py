@@ -1,3 +1,4 @@
+import os
 import typing
 
 from prefect.engine.state import State, Success
@@ -8,6 +9,9 @@ from prefect_ds.task_runner import DSTaskRunner
 
 
 def checkpoint_handler(task_runner: DSTaskRunner, old_state: State, new_state: State) -> State:
+    if "PREFECT__FLOWS__CHECKPOINTING" in os.environ and os.environ["PREFECT__FLOWS__CHECKPOINTING"] == "true":
+        raise AttributeError("Cannot use standard prefect checkpointing with this handler")
+
     if task_runner.result_handler is not None and old_state.is_pending() and new_state.is_running():
         if not hasattr(task_runner, "upstream_states"):
             raise TypeError(

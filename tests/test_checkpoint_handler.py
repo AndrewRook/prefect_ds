@@ -35,9 +35,15 @@ class TestCheckPointHandler:
         with pytest.raises(TypeError):
             dsh.checkpoint_handler(task_runner, old_state, new_state)
 
-    @pytest.mark.xfail()
-    def test_raises_error_if_regular_checkpointing_is_set_to_be_used(self):
-        assert False
+    def test_errors_if_regular_checkpointing_is_set_to_be_used(self, monkeypatch):
+        monkeypatch.setenv("PREFECT__FLOWS__CHECKPOINTING", "true")
+
+        task = Task(name="Task", result_handler=PandasResultHandler("dummy.csv"))
+        task_runner = DSTaskRunner(task)
+        old_state = Pending()
+
+        with pytest.raises(AttributeError):
+            dsh.checkpoint_handler(task_runner, old_state, old_state)
 
     @pytest.mark.xfail()
     def test_writes_checkpointed_file_to_disk_on_success(self):
