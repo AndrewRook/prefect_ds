@@ -22,9 +22,13 @@ class TestCheckPointHandler:
         with pytest.raises(TypeError):
             dsh.checkpoint_handler(task_runner, old_state, new_state)
 
-    @pytest.mark.xfail()
     def test_does_not_look_for_file_when_no_result_handler_given(self):
-        assert False
+        task = Task(name="Task")
+        task_runner = DSTaskRunner(task) # Does not get upstream_states by
+        # default, so normally would throw an error if a result handler was passed
+        old_state = Pending()
+        new_state = Running()
+        dsh.checkpoint_handler(task_runner, old_state, new_state)
 
     def test_raises_appropriate_error_when_incompatible_handler_given(self):
         task = Task(name="Task", result_handler=LocalResultHandler())
