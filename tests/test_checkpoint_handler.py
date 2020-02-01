@@ -1,8 +1,9 @@
+import pandas as pd
 import pytest
 
 from prefect.core.edge import Edge
 from prefect.core.task import Task
-from prefect.engine.state import State, Pending, Running
+from prefect.engine.state import State, Failed, Pending, Running, Success
 from prefect.engine.task_runner import TaskRunner
 from prefect.engine.result_handlers.local_result_handler import LocalResultHandler
 
@@ -49,17 +50,39 @@ class TestCheckPointHandler:
         with pytest.raises(AttributeError):
             dsh.checkpoint_handler(task_runner, old_state, old_state)
 
-    @pytest.mark.xfail()
-    def test_writes_checkpointed_file_to_disk_on_success(self):
-        assert False
+    def test_writes_checkpointed_file_to_disk_on_success(self, tmp_path):
+        result_handler = PandasResultHandler(
+            tmp_path / "dummy.csv",
+            write_kwargs={"index":False}
+        )
+        task = Task(name="Task", result_handler=result_handler)
+        expected_result = pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
+        task_runner = DSTaskRunner(task)
+        task_runner.upstream_states = {}
+        old_state = Running()
+        new_state = Success(result=expected_result)
 
-    @pytest.mark.xfail()
-    def test_does_not_write_checkpoint_file_to_disk_on_failure(self):
-        assert False
+        dsh.checkpoint_handler(task_runner, old_state, new_state)
 
-    @pytest.mark.xfail()
-    def test_does_not_write_checkpoint_file_to_disk_when_no_handler_given(self):
-        assert False
+        actual_result = pd.read_csv(tmp_path / "dummy.csv")
+        pd.testing.assert_frame_equal(expected_result, actual_result)
+
+    def test_does_not_write_checkpoint_file_to_disk_on_failure(self, tmp_path):
+        result_handler = PandasResultHandler(
+            tmp_path / "dummy.csv",
+            write_kwargs={"index":False}
+        )
+        task = Task(name="Task", result_handler=result_handler)
+        result = pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
+        task_runner = DSTaskRunner(task)
+        task_runner.upstream_states = {}
+        old_state = Running()
+        new_state = Failed(result=result)
+
+        dsh.checkpoint_handler(task_runner, old_state, new_state)
+
+        with pytest.raises(IOError):
+            pd.read_csv(tmp_path / "dummy.csv")
 
 
 class TestCreateInputMapping:
