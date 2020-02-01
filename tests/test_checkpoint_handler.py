@@ -67,6 +67,36 @@ class TestCheckPointHandler:
         actual_result = pd.read_csv(tmp_path / "dummy.csv")
         pd.testing.assert_frame_equal(expected_result, actual_result)
 
+    def test_moves_on_gracefully_if_checkpointed_file_does_not_exist_yet(self, tmp_path):
+        result_handler = PandasResultHandler(tmp_path / "dummy.csv")
+        task = Task(name="Task", result_handler=result_handler)
+        task_runner = TaskRunner(task)
+        task_runner.upstream_states = {}
+        old_state = Pending()
+        new_state = Running()
+
+        new_state = dsh.checkpoint_handler(task_runner, old_state, new_state)
+
+        assert new_state.is_running()
+
+    def test_reads_checkpointed_file_from_disk_if_exists(self, tmp_path):
+        result_handler = PandasResultHandler(tmp_path / "dummy.csv")
+        task = Task(name="Task", result_handler=result_handler)
+        expected_result = pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
+        expected_result.to_csv(tmp_path / "dummy.csv", index=False)
+        task_runner = TaskRunner(task)
+        task_runner.upstream_states = {}
+        old_state = Pending()
+        new_state = Running()
+
+        new_state = dsh.checkpoint_handler(task_runner, old_state, new_state)
+
+        assert new_state.is_successful()
+        pd.testing.assert_frame_equal(expected_result, new_state.result)
+
+
+
+
     def test_does_not_write_checkpoint_file_to_disk_on_failure(self, tmp_path):
         result_handler = PandasResultHandler(
             tmp_path / "dummy.csv",
