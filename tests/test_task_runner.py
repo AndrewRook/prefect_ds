@@ -25,15 +25,22 @@ def test_task_runner_works_in_normal_usage(tmp_path):
     with Flow("test") as flow:
         offsets = generate_list()
         data = generate_data.map(offsets)
-        # only_works_from_cache = broken_task()
+        only_works_from_cache = broken_task()
 
     cached_broken_data = pd.DataFrame({"one": [0, 0, 0], "two": [1, 1, 1]})
     cached_broken_data.to_csv(tmp_path / "test_broken.csv", index=False)
 
     flow_state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
-        #task_runner_state_handlers=[checkpoint_handler]
+        task_runner_state_handlers=[checkpoint_handler],
+        return_tasks=[data, only_works_from_cache]
     )
 
-    test = flow.run()
+    mapped_data_from_cache = [
+        pd.read_csv(tmp_path / "test_{offset}.csv".format(offset=offset))
+        for offset in [0, 2]
+    ]
+    assert len(mapped_data_from_cache) == len(flow_state.result[data].result)
+    for cached_data, flow_data in zip(mapped_data_from_cache, flow_state.result[data].result):
+        pd.testing.assert_frame_equal(cached_data, flow_data)
 
-    breakpoint()
+    pd.testing.assert_frame_equal(cached_broken_data, flow_state.result[only_works_from_cache].result)
