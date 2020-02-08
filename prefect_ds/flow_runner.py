@@ -42,5 +42,27 @@ class DSFlowRunner(FlowRunner):
             task_runner_state_handlers=task_runner_state_handlers,
             executor=executor
         )
-        breakpoint()
+        self._purge_unnecessary_tasks(task, upstream_states)
         return task_output
+
+    def _purge_unnecessary_tasks(self, task, upstream_state_edges):
+        for state_edge in upstream_state_edges:
+            upstream_task = state_edge.upstream_task
+            edges_from_upstream_task = self.flow.edges_from(upstream_task)
+            is_safely_purgeable = True
+            for edge in edges_from_upstream_task:
+                if edge.downstream_task == task:
+                    # Downstream task is the current task
+                    continue
+                if (
+                        edge.downstream_task in self.task_states and
+                        self.task_states[edge.downstream_task].is_successful() == True
+                ):
+                    # Downstream edge has been successfully completed
+                    continue
+                # If we're still in this iteration of the loop, it means that this
+                # downstream task hasn't successfully completed yet
+                is_safely_purgeable = False
+                break
+            if is_safely_purgeable:
+                self.task_states[upstream_task].result = None
