@@ -4,6 +4,8 @@ from prefect.core.edge import Edge
 from prefect.core.task import Task
 from typing import Any, Callable, Dict, Iterable, Set
 
+from prefect_ds.result import PurgedResult
+
 
 class DSFlowRunner(FlowRunner):
     def get_flow_run_state(
@@ -65,4 +67,4 @@ class DSFlowRunner(FlowRunner):
                 is_safely_purgeable = False
                 break
             if is_safely_purgeable:
-                self.task_states[upstream_task].result = None
+                self.task_states[upstream_task].result = PurgedResult
