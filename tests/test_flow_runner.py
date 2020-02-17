@@ -13,12 +13,12 @@ def create_offsets(num_offsets):
     return list(range(num_offsets))
 
 @task()
-def create_data(offset):
+def create_data(offset=0):
     data = pd.DataFrame({
         "one": [1, 2, 3],
         "two": [4, 5, 6]
     })
-    return data
+    return data + offset
 
 @task()
 def merge_data(data_list):
@@ -33,70 +33,89 @@ def modify_data(input_data):
     return input_data * 2
 
 
-@pytest.fixture(scope="module")
-def test_flow():
+def test_purges_upstream_tasks():
     with Flow("test") as flow:
-        num_offsets = Parameter("num_offsets")
-        offsets = create_offsets(num_offsets)
-        initial_data_list = create_data.map(offsets)
-        initial_data_list_2 = create_data.map(offsets)
-        merged_data = merge_data(initial_data_list)
-        merged_data_2 = merge_data(initial_data_list_2)
-        modified_merged_data = modify_data(merged_data)
-        fully_combined_data = merge_two_dataframes(merged_data, merged_data_2)
-        combined_modified_data = merge_two_dataframes(merged_data, modified_merged_data)
+        initial_data = create_data()
+        modified_data = modify_data(initial_data)
+        modified_data_2 = modify_data(modified_data)
 
-    tasks = {
-        "num_offsets": num_offsets,
-        "offsets": offsets,
-        "initial_data_list": initial_data_list,
-        "initial_data_list_2": initial_data_list_2,
-        "merged_data": merged_data,
-        "merged_data_2": merged_data_2,
-        "modified_merged_data": modified_merged_data,
-        "fully_combined_data": fully_combined_data,
-        "combined_modified_data": combined_modified_data
-    }
-
-    return DSFlowRunner(flow=flow), tasks
-
-
-def test_runs_at_all(test_flow):
-    flow, tasks = test_flow
-    state = flow.run(parameters={"num_offsets": 2}, return_tasks=flow.flow.tasks)
-    print(state.result)
-
-
-def test_gets_expected_answers(test_flow):
-    flow, tasks = test_flow
-    state = flow.run(
-        parameters={"num_offsets": 2},
-        return_tasks=[tasks["fully_combined_data"], tasks["combined_modified_data"]]
-    )
-
-    expected_fully_combined_data = pd.DataFrame({
-        "one": [1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3],
-        "two": [4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6]
+    state = DSFlowRunner(flow=flow).run(return_tasks=flow.tasks)
+    expected_result = pd.DataFrame({
+        "one": [4, 8, 12],
+        "two": [16, 20, 24]
     })
-    pd.testing.assert_frame_equal(
-        expected_fully_combined_data,
-        state.result[tasks["fully_combined_data"]].result
-    )
+    pd.testing.assert_frame_equal(expected_result, state.result[modified_data_2].result)
+    assert state.result[initial_data]._result is PurgedResult
+    assert state.result[modified_data]._result is PurgedResult
 
-    expected_combined_modified_data = pd.DataFrame({
-        "one": [1, 2, 3, 1, 2, 3, 2, 4, 6, 2, 4, 6],
-        "two": [4, 5, 6, 4, 5, 6, 8, 10, 12, 8, 10, 12]
+
+def test_purges_properly_when_non_tasks_are_given_as_task_inputs():
+    with Flow("test") as flow:
+        initial_data = create_data(5)
+        modified_data = modify_data(initial_data)
+        modified_data_2 = modify_data(modified_data)
+    state = DSFlowRunner(flow=flow).run(return_tasks=flow.tasks)
+    expected_result = pd.DataFrame({
+        "one": [24, 28, 32],
+        "two": [36, 40, 44]
     })
-    pd.testing.assert_frame_equal(
-        expected_combined_modified_data,
-        state.result[tasks["combined_modified_data"]].result
+    pd.testing.assert_frame_equal(expected_result, state.result[modified_data_2].result)
+    assert state.result[initial_data]._result is PurgedResult
+    assert state.result[modified_data]._result is PurgedResult
+
+
+def test_purges_parameters():
+    with Flow("test") as flow:
+        offset = Parameter("offset")
+        initial_data = create_data(offset)
+    state = DSFlowRunner(flow=flow).run(
+        parameters={"offset": 5}, return_tasks=flow.tasks
     )
+    expected_result = pd.DataFrame({
+        "one": [6, 7, 8],
+        "two": [9, 10, 11]
+    })
+    pd.testing.assert_frame_equal(expected_result, state.result[initial_data].result)
+    assert state.result[offset]._result is PurgedResult
 
 
-def test_purges_upstream_tasks(test_flow):
-    flow, tasks = test_flow
-    state = flow.run(parameters={"num_offsets": 2}, return_tasks=flow.flow.tasks)
-    for task_name, task_object in tasks.items():
-        if task_name not in ("fully_combined_data", "combined_modified_data"):
-            #breakpoint()
-            assert state.result[task_object]._result is PurgedResult
+def test_purges_repeated_maps():
+    with Flow("test") as flow:
+        offsets = create_offsets(2)
+        initial_data = create_data.map(offsets)
+        modified_data = modify_data.map(initial_data)
+        merged_data = merge_data(modified_data)
+    state = DSFlowRunner(flow=flow).run(
+        return_tasks=flow.tasks
+    )
+    expected_result = pd.DataFrame({
+        "one": [2, 4, 6, 4, 6, 8],
+        "two": [8, 10, 12, 10, 12, 14]
+    })
+    pd.testing.assert_frame_equal(expected_result, state.result[merged_data].result)
+    assert all(result is None for result in state.result[initial_data].result)
+    assert all(result is None for result in state.result[modified_data].result)
+
+
+def test_purges_properly_when_upstream_has_multiple_downstream():
+    with Flow("test") as flow:
+        initial_data = create_data()
+        modified_data_1 = initial_data * 3
+        modified_data_2 = modify_data(initial_data)
+
+    state = DSFlowRunner(flow=flow).run(
+        return_tasks=flow.tasks
+    )
+    expected_result_1 = pd.DataFrame({
+        "one": [3, 6, 9],
+        "two": [12, 15, 18]
+    })
+    expected_result_2 = pd.DataFrame({
+        "one": [2, 4, 6],
+        "two": [8, 10, 12]
+    })
+
+    pd.testing.assert_frame_equal(expected_result_1, state.result[modified_data_1].result)
+    pd.testing.assert_frame_equal(expected_result_2, state.result[modified_data_2].result)
+    assert state.result[initial_data]._result is PurgedResult
+    
