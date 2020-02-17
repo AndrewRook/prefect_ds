@@ -8,6 +8,7 @@ from prefect_ds.result import PurgedResult
 
 
 class DSFlowRunner(FlowRunner):
+
     def get_flow_run_state(
         self,
         state: State,
@@ -50,7 +51,15 @@ class DSFlowRunner(FlowRunner):
     def _purge_unnecessary_tasks(self, task, upstream_state_edges):
         for state_edge in upstream_state_edges:
             upstream_task = state_edge.upstream_task
-            edges_from_upstream_task = self.flow.edges_from(upstream_task)
+            #breakpoint()
+            try:
+                edges_from_upstream_task = self.flow.edges_from(upstream_task)
+            except ValueError:
+                # When a non-task (e.g. an int) is used as a task input,
+                # it doesn't show up in the task list. In these cases, we
+                # don't need to worry about purging anything.
+                continue
+
             is_safely_purgeable = True
             for edge in edges_from_upstream_task:
                 if edge.downstream_task == task:
@@ -67,4 +76,7 @@ class DSFlowRunner(FlowRunner):
                 is_safely_purgeable = False
                 break
             if is_safely_purgeable:
-                self.task_states[upstream_task].result = PurgedResult
+                if self.task_states[upstream_task].is_mapped():
+                    for mapped_state in self.task_states[upstream_task].map_states:
+                        mapped_state._result = PurgedResult
+                self.task_states[upstream_task]._result = PurgedResult
