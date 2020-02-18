@@ -118,4 +118,3 @@ def test_purges_properly_when_upstream_has_multiple_downstream():
     pd.testing.assert_frame_equal(expected_result_1, state.result[modified_data_1].result)
     pd.testing.assert_frame_equal(expected_result_2, state.result[modified_data_2].result)
     assert state.result[initial_data]._result is PurgedResult
-    
