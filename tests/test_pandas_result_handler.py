@@ -21,8 +21,32 @@ class TestInit:
 
 class TestReadWrite:
 
-    def test_read_write_works(self, tmp_path):
+    def test_read_write_works_csv(self, tmp_path):
         filename = tmp_path / "test.csv"
+        handler = prh.PandasResultHandler(filename, write_kwargs={"index": False})
+
+        data = pd.DataFrame({
+            "one": [1, 2, 3],
+            "two": [4, 5, 6]
+        })
+        handler.write(data)
+        read_data = handler.read()
+        pd.testing.assert_frame_equal(data, read_data)
+
+    def test_read_write_works_json(self, tmp_path):
+        filename = tmp_path / "test.json"
+        handler = prh.PandasResultHandler(filename)
+
+        data = pd.DataFrame({
+            "one": [1, 2, 3],
+            "two": [4, 5, 6]
+        })
+        handler.write(data)
+        read_data = handler.read()
+        pd.testing.assert_frame_equal(data, read_data)
+
+    def test_read_write_case_insensitive(self, tmp_path):
+        filename = tmp_path / "test.cSv"
         handler = prh.PandasResultHandler(filename, write_kwargs={"index": False})
 
         data = pd.DataFrame({
