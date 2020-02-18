@@ -26,6 +26,7 @@ def _generate_pandas_io_methods() -> typing.Tuple[typing.Dict[str, typing.Callab
 
 
 class PandasResultHandler(ResultHandler):
+    
     _READ_OPS_MAPPING, _WRITE_OPS_MAPPING = _generate_pandas_io_methods()
 
     def __init__(
