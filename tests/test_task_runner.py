@@ -14,11 +14,11 @@ def test_task_runner_works_in_normal_usage(tmp_path):
     def generate_list():
         return [0, 2]
 
-    @task(result_handler=PandasResultHandler(tmp_path / "test_{offset}.csv", write_kwargs={"index": False}))
+    @task(result_handler=PandasResultHandler(tmp_path / "test_{offset}.csv", "csv", write_kwargs={"index": False}))
     def generate_data(offset):
         return pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]}) + offset
 
-    @task(result_handler=PandasResultHandler(tmp_path / "test_broken.csv", write_kwargs={"index": False}))
+    @task(result_handler=PandasResultHandler(tmp_path / "test_broken.csv", "csv", write_kwargs={"index": False}))
     def broken_task():
         assert False
 
