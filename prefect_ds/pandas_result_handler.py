@@ -28,17 +28,23 @@ def _generate_pandas_io_methods() -> typing.Tuple[typing.Dict[str, typing.Callab
 class PandasResultHandler(ResultHandler):
     
     _READ_OPS_MAPPING, _WRITE_OPS_MAPPING = _generate_pandas_io_methods()
+    assert set(_READ_OPS_MAPPING.keys()) == set(_WRITE_OPS_MAPPING.keys())
 
     def __init__(
             self,
             path: typing.Union[str, pathlib.Path],
+            file_type: str,
             read_kwargs: dict = None,
             write_kwargs: dict = None
     ):
         self.path = pathlib.Path(path)
+        self.file_type = file_type
 
-        self.extension = self.path.suffix.replace(".", "").lower()
-        assert self.extension in self._READ_OPS_MAPPING and self.extension in self._WRITE_OPS_MAPPING
+        if self.file_type.lower() not in self._READ_OPS_MAPPING:
+            raise ValueError(
+                f"{self.file_type} not available. "
+                f"Known file extensions are {list(self._READ_OPS_MAPPING.keys())}"
+            )
         self.read_kwargs = read_kwargs if read_kwargs is not None else {}
         self.write_kwargs = write_kwargs if write_kwargs is not None else {}
         super().__init__()
@@ -47,7 +53,7 @@ class PandasResultHandler(ResultHandler):
         input_mapping = {} if input_mapping is None else input_mapping
         path_string = str(self.path).format(**input_mapping)
         self.logger.debug("Starting to read result from {}...".format(path_string))
-        data = self._READ_OPS_MAPPING[self.extension](
+        data = self._READ_OPS_MAPPING[self.file_type.lower()](
             path_string,
             **self.read_kwargs
         )
@@ -58,6 +64,6 @@ class PandasResultHandler(ResultHandler):
         input_mapping = {} if input_mapping is None else input_mapping
         path_string = str(self.path).format(**input_mapping)
         self.logger.debug("Starting to write result to {}...".format(path_string))
-        write_function = getattr(result, self._WRITE_OPS_MAPPING[self.extension])
+        write_function = getattr(result, self._WRITE_OPS_MAPPING[self.file_type.lower()])
         write_function(path_string, **self.write_kwargs)
         self.logger.debug("Finished writing result to {}...".format(path_string))

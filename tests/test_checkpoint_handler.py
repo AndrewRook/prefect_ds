@@ -15,7 +15,7 @@ from prefect_ds.pandas_result_handler import PandasResultHandler
 
 class TestCheckPointHandler:
     def test_errors_when_regular_runner_is_used(self):
-        task = Task(name="Task", result_handler=PandasResultHandler("dummy.csv"))
+        task = Task(name="Task", result_handler=PandasResultHandler("dummy.csv", "csv"))
         task_runner = TaskRunner(task)
         old_state = Pending()
         new_state = Running()
@@ -43,7 +43,7 @@ class TestCheckPointHandler:
     def test_errors_if_regular_checkpointing_is_set_to_be_used(self, monkeypatch):
         monkeypatch.setenv("PREFECT__FLOWS__CHECKPOINTING", "true")
 
-        task = Task(name="Task", result_handler=PandasResultHandler("dummy.csv"))
+        task = Task(name="Task", result_handler=PandasResultHandler("dummy.csv", "csv"))
         task_runner = DSTaskRunner(task)
         old_state = Pending()
 
@@ -53,6 +53,7 @@ class TestCheckPointHandler:
     def test_writes_checkpointed_file_to_disk_on_success(self, tmp_path):
         result_handler = PandasResultHandler(
             tmp_path / "dummy.csv",
+            "csv",
             write_kwargs={"index":False}
         )
         task = Task(name="Task", result_handler=result_handler)
@@ -68,7 +69,7 @@ class TestCheckPointHandler:
         pd.testing.assert_frame_equal(expected_result, actual_result)
 
     def test_moves_on_gracefully_if_checkpointed_file_does_not_exist_yet(self, tmp_path):
-        result_handler = PandasResultHandler(tmp_path / "dummy.csv")
+        result_handler = PandasResultHandler(tmp_path / "dummy.csv", "csv")
         task = Task(name="Task", result_handler=result_handler)
         task_runner = TaskRunner(task)
         task_runner.upstream_states = {}
@@ -80,7 +81,7 @@ class TestCheckPointHandler:
         assert new_state.is_running()
 
     def test_reads_checkpointed_file_from_disk_if_exists(self, tmp_path):
-        result_handler = PandasResultHandler(tmp_path / "dummy.csv")
+        result_handler = PandasResultHandler(tmp_path / "dummy.csv", "csv")
         task = Task(name="Task", result_handler=result_handler)
         expected_result = pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
         expected_result.to_csv(tmp_path / "dummy.csv", index=False)
@@ -100,6 +101,7 @@ class TestCheckPointHandler:
     def test_does_not_write_checkpoint_file_to_disk_on_failure(self, tmp_path):
         result_handler = PandasResultHandler(
             tmp_path / "dummy.csv",
+            "csv",
             write_kwargs={"index":False}
         )
         task = Task(name="Task", result_handler=result_handler)
