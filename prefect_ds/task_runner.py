@@ -12,5 +12,8 @@ class DSTaskRunner(TaskRunner):
         context: Dict[str, Any] = None,
         executor: "prefect.engine.executors.Executor" = None,
     ) -> State:
+        """
+        See the documentation for ``prefect.engine.task_runner.TaskRunner.run()``.
+        """
         self.upstream_states = upstream_states
         return super().run(state=state, upstream_states=upstream_states, context=context, executor=executor)

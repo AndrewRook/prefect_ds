@@ -18,6 +18,9 @@ class DSFlowRunner(FlowRunner):
         task_runner_state_handlers: Iterable[Callable],
         executor: "prefect.engine.executors.base.Executor",
     ) -> State:
+        """
+        See the documentation for ``prefect.engine.flow_runner.FlowRunner.get_flow_run_state()``.
+        """
         self.task_states = task_states
         return super().get_flow_run_state(
             state=state,
@@ -37,6 +40,10 @@ class DSFlowRunner(FlowRunner):
         task_runner_state_handlers: Iterable[Callable],
         executor: "prefect.engine.executors.Executor",
     ) -> State:
+        """
+        Same as ``prefect.engine.flow_runner.FlowRunner.run_task()``, but checks
+        to see if upstream tasks can be purged after the current task is run.
+        """
         task_output = super().run_task(
             task=task,
             state=state,

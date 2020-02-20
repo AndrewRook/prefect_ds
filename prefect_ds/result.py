@@ -34,4 +34,5 @@ class PurgedResultType(SafeResult):
         """
         return self
 
+
 PurgedResult = PurgedResultType()
