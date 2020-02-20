@@ -26,7 +26,33 @@ def _generate_pandas_io_methods() -> typing.Tuple[typing.Dict[str, typing.Callab
 
 
 class PandasResultHandler(ResultHandler):
-    
+    """
+    Hook for storing and retrieving task results in Pandas DataFrames.
+    Task results are written/read via the standard Pandas
+    ``to_[FILETYPE]``/``read_[FILETYPE]`` methods, and additionally the filename
+    can be fully specified at task instantiation.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Filepath to be read from or written to, including file name and extension.
+    file_type : str
+        The type of file to write to, e.g. "csv" or "parquet". Must match the name
+        of the appropriate ``to_[FILETYPE]``/``read_[FILETYPE]`` method.
+    read_kwargs : dict or None
+        If present, passed as **kwargs to the ``read_[FILETYPE]`` method.
+    write_kwargs : dict or None
+        If present, passed as **kwargs tot he ``to_[FILETYPE]`` method.
+
+    .. note::
+        Because the filepath is fully specified, when using this handler in a ``map``
+        can lead to the same file being read to or written from by every iteration of
+        the map. To deal with this case this handler allows for Python's ``str.format``
+        to be used with the names of arguments to the task instance. For instance, if
+        your task has an argument named ``sample_name`` that you intend to map over,
+        supplying a ``file_type`` like ``"output_{sample_name}.csv"`` will fill in the
+        values of that argument for each iteration of the map.
+    """
     _READ_OPS_MAPPING, _WRITE_OPS_MAPPING = _generate_pandas_io_methods()
     assert set(_READ_OPS_MAPPING.keys()) == set(_WRITE_OPS_MAPPING.keys())
 
@@ -50,6 +76,16 @@ class PandasResultHandler(ResultHandler):
         super().__init__()
 
     def read(self, *, input_mapping=None) -> pd.DataFrame:
+        """
+        Read a result from the specified ``path`` using the appropriate ``read_[FILETYPE]`` method.
+
+        Parameters
+        ----------
+        input_mapping : dict
+            If present, passed to ``path.format()`` to set the final filename. This is necessary
+            for mapped tasks, to prevent the same file from being read from for each map sub-step.
+        """
+
         input_mapping = {} if input_mapping is None else input_mapping
         path_string = str(self.path).format(**input_mapping)
         self.logger.debug("Starting to read result from {}...".format(path_string))
