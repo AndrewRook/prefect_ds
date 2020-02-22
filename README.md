@@ -20,7 +20,7 @@ A result handler that reads to and writes from Pandas DataFrames. It should be a
 any file type Pandas supports, and unlike built-in handlers like `LocalResultHandler` requires
 the full specification of the file path — this makes it easy to inspect task results, or
 use those results in other analysis. It also has support for templating, so task arguments
-can be injected into the filenames (useful for things like `map`s).
+can be injected into the filenames (useful for things like `map`).
 
 ```python
 >>> import pandas as pd
@@ -33,4 +33,19 @@ can be injected into the filenames (useful for things like `map`s).
 
 ```
 
-## [`checkpoint_handler`](prefect_ds/checkpoint_handler.py)
+Note that in order to use the templating functionality of `PandasResultHandler`, you will need
+to run your flow using the `DSTaskRunner` (see below for more details).
+
+## [`checkpoint_handler`](prefect_ds/checkpoint_handler.py) and [`DSTaskRunner`](prefect_ds/task_runner.py)
+
+A state handler that implements filename-based checkpointing, in concert with the specialty 
+result handlers in prefect_ds. It intercepts the state change from `Pending`
+to `Running`, runs the `read` method of the result handler, and if successful loads
+the result of that method as the result of the task, then sets the task to the `Success`
+state. Conversely, if the `read` method fails, the task is run as normal and instead the
+`checkpoint_handler` runs the `write` method of the result handler afterwards. 
+
+This handler combines with `DSTaskRunner`, an extension to Prefect's `TaskRunner` that implements
+the necessary hacks to allow for the templating of task arguments. This templating is required
+to handle cases like `map`, where without the templating the `checkpoint_handler` will read from/write
+to the same file for every iteration of the `map`. 
