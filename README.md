@@ -34,7 +34,7 @@ can be injected into the filenames (useful for things like `map`).
 
 >>> @task(result_handler=PandasResultHandler("data_{id}.csv", "csv"))
 ... def demo_task(id):
-...     time.sleep(5)
+...     time.sleep(2)
 ...     return pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
 
 ```
@@ -60,6 +60,8 @@ to handle cases like `map`, where without the templating the `checkpoint_handler
 to the same file for every iteration of the `map`. 
 
 ```python
+>>> import contextlib
+
 >>> from prefect import Flow
 >>> from prefect.engine import FlowRunner
 >>> from prefect_ds.checkpoint_handler import checkpoint_handler
@@ -68,19 +70,25 @@ to the same file for every iteration of the `map`.
 >>> with Flow("test") as flow:
 ...     output = demo_task(1)
 
->>> start = time.time()
->>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
-...     task_runner_state_handlers=[checkpoint_handler]
-... )
->>> print(f"Took more than 5 seconds: {(time.time() - start) > 5}")
-True
+>>> with contextlib.suppress(FileNotFoundError):
+...     os.remove("data_1.csv")
 
 >>> start = time.time()
 >>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
 ...     task_runner_state_handlers=[checkpoint_handler]
 ... )
->>> print(f"Took less than 1 seconds: {(time.time() - start) < 1}")
-True
+>>> print(f"Took more than 1 second: {(time.time() - start) > 1}")
+Took more than 1 second: True
+
+>>> start = time.time()
+>>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
+...     task_runner_state_handlers=[checkpoint_handler]
+... )
+>>> print(f"Took less than 1 second: {(time.time() - start) < 1}")
+Took less than 1 second: True
+
+>>> with contextlib.suppress(FileNotFoundError):
+...     os.remove("data_1.csv")
 
 ```
 
