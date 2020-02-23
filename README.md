@@ -120,11 +120,11 @@ together, `DSFlowRunner` can have value on its own.
 ...     four_x_data = double_data(two_x_data)
 
 >>> state = DSFlowRunner(flow=flow).run(return_tasks=flow.tasks)
->>> state.result[initial_data].result
+>>> state.result[initial_data].result # actual type is prefect_ds.result.PurgedResult
 
->>> state.result[two_x_data].result
+>>> state.result[two_x_data].result # another PurgedResult
 
->>> state.result[four_x_data].result
+>>> state.result[four_x_data].result # final result is correct, even though upstream results are gone
    one  two
 0    4   16
 1    8   20
