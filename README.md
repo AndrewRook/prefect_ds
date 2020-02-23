@@ -23,12 +23,18 @@ use those results in other analysis. It also has support for templating, so task
 can be injected into the filenames (useful for things like `map`).
 
 ```python
+>>> import os
+>>> os.environ["PREFECT__LOGGING__LEVEL"] = "ERROR"
+
 >>> import pandas as pd
+>>> import time
+
 >>> from prefect import task
 >>> from prefect_ds.pandas_result_handler import PandasResultHandler 
 
->>> @task(result_handler=PandasResultHandler("data/download_{id}.csv", "csv"))
-... def demo_pandas_result_handler(id):
+>>> @task(result_handler=PandasResultHandler("data_{id}.csv", "csv"))
+... def demo_task(id):
+...     time.sleep(5)
 ...     return pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
 
 ```
@@ -43,9 +49,41 @@ result handlers in prefect_ds. It intercepts the state change from `Pending`
 to `Running`, runs the `read` method of the result handler, and if successful loads
 the result of that method as the result of the task, then sets the task to the `Success`
 state. Conversely, if the `read` method fails, the task is run as normal and instead the
-`checkpoint_handler` runs the `write` method of the result handler afterwards. 
+`checkpoint_handler` runs the `write` method of the result handler afterwards. Using the 
+`checkpoint_handler` makes it much easier to cache data across Prefect runs — you don't have to
+explicitly persist the final flow state between runs, and you don't have to have the cache expire
+after a certain amount of time. 
 
 This handler combines with `DSTaskRunner`, an extension to Prefect's `TaskRunner` that implements
 the necessary hacks to allow for the templating of task arguments. This templating is required
 to handle cases like `map`, where without the templating the `checkpoint_handler` will read from/write
 to the same file for every iteration of the `map`. 
+
+```python
+>>> from prefect import Flow
+>>> from prefect.engine import FlowRunner
+>>> from prefect_ds.checkpoint_handler import checkpoint_handler
+>>> from prefect_ds.task_runner import DSTaskRunner
+
+>>> with Flow("test") as flow:
+...     output = demo_task(1)
+
+>>> start = time.time()
+>>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
+...     task_runner_state_handlers=[checkpoint_handler]
+... )
+>>> print(f"Took more than 5 seconds: {(time.time() - start) > 5}")
+True
+
+>>> start = time.time()
+>>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
+...     task_runner_state_handlers=[checkpoint_handler]
+... )
+>>> print(f"Took less than 1 seconds: {(time.time() - start) < 1}")
+True
+
+```
+
+## [`DSFlowRunner`](prefect_ds/flow_runner.py)
+
+An extension to Prefect's `FlowRunner`
