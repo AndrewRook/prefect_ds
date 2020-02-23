@@ -95,4 +95,48 @@ Took less than 1 second: True
 
 ## [`DSFlowRunner`](prefect_ds/flow_runner.py)
 
-An extension to Prefect's `FlowRunner`
+An extension to Prefect's `FlowRunner`, which will automatically purge the results of upstream
+tasks once all of their downstream tasks have been run. This can be useful if your task outputs are
+large datasets; by default Prefect stores the results of every task for the duration of the
+flow, which can overwhelm your RAM if your results are all things like multi-GB Pandas DataFrames.
+While `PandasResultHandler`, `checkpoint_handler`, and `DSTaskRunner` are all designed to be used
+together, `DSFlowRunner` can have value on its own.
+
+```python
+>>> from prefect_ds.flow_runner import DSFlowRunner
+
+>>> @task()
+... def generate_data():
+...     return pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
+
+>>> @task()
+... def double_data(input_data):
+...     return input_data * 2
+
+
+>>> with Flow("test") as flow:
+...     initial_data = generate_data()
+...     two_x_data = double_data(initial_data)
+...     four_x_data = double_data(two_x_data)
+
+>>> state = DSFlowRunner(flow=flow).run(return_tasks=flow.tasks)
+>>> state.result[initial_data].result
+
+>>> state.result[two_x_data].result
+
+>>> state.result[four_x_data].result
+   one  two
+0    4   16
+1    8   20
+2   12   24
+
+```  
+
+# Caveat
+While these components have unit tests covering what I consider to be typical use cases, 
+I have not attempted to comprehensively test every possible interaction with Prefect. 
+As my understanding of Prefect is still relatively immature, I expect there 
+are edge cases where the added functionality of prefect_ds breaks something in Prefect. I think
+this is especially likely with Prefect Cloud, which I have not done any testing on. If you find
+such a situation, please feel free to post an issue describing the problem and (ideally) including
+a minimum reproducible example of the bug.
