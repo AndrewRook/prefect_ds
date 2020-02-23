@@ -34,7 +34,7 @@ can be injected into the filenames (useful for things like `map`).
 
 >>> @task(result_handler=PandasResultHandler("data_{id}.csv", "csv"))
 ... def demo_task(id):
-...     time.sleep(2)
+...     time.sleep(5)
 ...     return pd.DataFrame({"one": [1, 2, 3], "two": [4, 5, 6]})
 
 ```
@@ -77,8 +77,8 @@ to the same file for every iteration of the `map`.
 >>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
 ...     task_runner_state_handlers=[checkpoint_handler]
 ... )
->>> print(f"Took more than 1 second: {(time.time() - start) > 1}")
-Took more than 1 second: True
+>>> print(f"Took more than 5 seconds: {(time.time() - start) > 5}")
+Took more than 5 seconds: True
 
 >>> start = time.time()
 >>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
@@ -87,8 +87,6 @@ Took more than 1 second: True
 >>> print(f"Took less than 1 second: {(time.time() - start) < 1}")
 Took less than 1 second: True
 
->>> with contextlib.suppress(FileNotFoundError):
-...     os.remove("data_1.csv")
 
 ```
 
