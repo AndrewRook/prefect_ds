@@ -32,6 +32,7 @@ can be injected into the filenames (useful for things like `map`).
 >>> from prefect import task
 >>> from prefect_ds.pandas_result_handler import PandasResultHandler 
 
+>>> # Note the use of the task argument {id} as a template in the filename
 >>> @task(result_handler=PandasResultHandler("data_{id}.csv", "csv"))
 ... def demo_task(id):
 ...     time.sleep(5)
@@ -70,9 +71,11 @@ to the same file for every iteration of the `map`.
 >>> with Flow("test") as flow:
 ...     output = demo_task(1)
 
+>>> # First, clean up any existing task results
 >>> with contextlib.suppress(FileNotFoundError):
 ...     os.remove("data_1.csv")
 
+>>> # Run the flow. Since the result file doesn't exist, will run the task
 >>> start = time.time()
 >>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
 ...     task_runner_state_handlers=[checkpoint_handler]
@@ -80,13 +83,13 @@ to the same file for every iteration of the `map`.
 >>> print(f"Took more than 5 seconds: {(time.time() - start) > 5}")
 Took more than 5 seconds: True
 
+>>> # Run the flow again. Now that the result file exists, the task is short-circuited
 >>> start = time.time()
 >>> state = FlowRunner(flow=flow, task_runner_cls=DSTaskRunner).run(
 ...     task_runner_state_handlers=[checkpoint_handler]
 ... )
 >>> print(f"Took less than 1 second: {(time.time() - start) < 1}")
 Took less than 1 second: True
-
 
 ```
 
