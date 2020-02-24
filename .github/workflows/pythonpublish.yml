@@ -25,10 +25,8 @@ jobs:
           ${{ github.ref }}
       run: |
         # sed -i.bak 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\2/g' prefect_ds/__init__.py
-        echo ${{ github.ref }}
-        sed 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\2/g' prefect_ds/__init__.py
-        export TAG=$(basename $VERSION)
+        export TAG=$(basename ${{ github.ref }})
         echo $TAG
-        #sed 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\2/g' prefect_ds/__init__.py
+        # sed 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\2/g' prefect_ds/__init__.py
         # python setup.py sdist bdist_wheel
         # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
