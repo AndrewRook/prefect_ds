@@ -22,7 +22,7 @@ jobs:
         TWINE_USERNAME: ${{ secrets.PYPI_TEST_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
         VERSION: |
-          ${{ github.ref }}"woo"
+          $(basename ${{ github.ref }})
       run: |
         # sed -i.bak 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\2/g' prefect_ds/__init__.py
         echo ${{ github.ref }}
