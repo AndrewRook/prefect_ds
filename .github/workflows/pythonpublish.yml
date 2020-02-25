@@ -31,4 +31,4 @@ jobs:
         echo "__version__ = \"${TAG}\"" >> prefect_ds/__init__.py
         python -c "import prefect_ds; print(prefect_ds.__version__)"
         python setup.py sdist bdist_wheel
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        twine upload dist/*
