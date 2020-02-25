@@ -5,7 +5,10 @@ import sys
 from setuptools import setup, find_packages
 
 sys.path.append("prefect_ds")
-from prefect_ds import __version__
+try:
+    from prefect_ds import __version__
+except ImportError:
+    __version__ = "null"
 
 
 CLASSIFIERS = [
