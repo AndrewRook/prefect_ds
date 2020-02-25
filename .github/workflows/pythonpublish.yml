@@ -1,0 +1,28 @@
+name: Upload Python Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@722adc6 # v2
+    - name: Set up Python
+      uses: actions/setup-python@28a6c1b # v1.1.1
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_TEST_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
+      run: |
+        export TAG=$(basename ${{ github.ref }})
+        sed -i.bak 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\'$TAG'\2/g' prefect_ds/__init__.py
+        python setup.py sdist bdist_wheel
+        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
