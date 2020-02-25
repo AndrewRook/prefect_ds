@@ -44,6 +44,7 @@ if __name__ == "__main__":
         author='Andrew Schechtman-Rook',
         maintainer='Andrew Schechtman-Rook',
         long_description=README,
+        long_description_content_type="text/markdown",
         packages=find_packages(where="."),
         classifiers=CLASSIFIERS,
         install_requires=INSTALL_REQUIRES,
