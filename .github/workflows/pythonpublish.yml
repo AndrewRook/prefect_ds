@@ -1,8 +1,8 @@
 name: Upload Python Package
 
-on:
-  release:
-    types: [created]
+on: [push]
+#  release:
+#    types: [created]
 
 jobs:
   deploy:
@@ -23,6 +23,10 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
       run: |
         export TAG=$(basename ${{ github.ref }})
+        version_exists_already=`grep "__version__" prefect_ds/__init__.py | wc -l`
+        if [ $version_exists_already -ne 0 ]; then
+          exit 1
+        fi
         sed -i.bak 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\'$TAG'\2/g' prefect_ds/__init__.py
-        python setup.py sdist bdist_wheel
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        # python setup.py sdist bdist_wheel
+        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
