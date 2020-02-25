@@ -19,8 +19,8 @@ jobs:
         pip install setuptools wheel twine
     - name: Build and publish
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_TEST_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
         export TAG=$(basename ${{ github.ref }})
         version_exists_already=`grep "__version__" prefect_ds/__init__.py | wc -l`
