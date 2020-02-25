@@ -28,6 +28,8 @@ jobs:
           echo "__version__ variable should not be in prefect_ds/__init__.py"
           exit 1
         fi
-        sed -i.bak 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\'$TAG'\2/g' prefect_ds/__init__.py
+        echo "__version__ = \"${TAG}\"" >> prefect_ds/__init__.py
+        # sed -i.bak 's/^\(__version__[[:space:]]*=[[:space:]]*["'\'']\).*\(["'\'']\)$/\1\'$TAG'\2/g' prefect_ds/__init__.py
+        python -c "import prefect_ds; print(prefect_ds.__version__)"
         # python setup.py sdist bdist_wheel
         # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
