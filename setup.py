@@ -19,7 +19,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3 :: Only"
 ]
 INSTALL_REQUIRES = [
-    'prefect >= 0.9.0, <= 0.9.2',
+    'prefect >= 0.9.0, <= 0.9.5',
     'pandas >= 0.25.3, <= 0.25.3'
 ]
 
