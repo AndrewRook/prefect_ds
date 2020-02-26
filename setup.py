@@ -20,7 +20,7 @@ CLASSIFIERS = [
 ]
 INSTALL_REQUIRES = [
     'prefect >= 0.9.0, <= 0.9.5',
-    'pandas >= 0.25.3, <= 0.25.3'
+    'pandas >= 0.25.3, <= 1.0.1'
 ]
 
 EXTRAS_REQUIRE = {
