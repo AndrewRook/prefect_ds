@@ -1,0 +1,28 @@
+name: Test latest dependencies
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@722adc6 # v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@28a6c1b # v1.1.1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[dev]
+    - name: Run doctests
+      run: |
+        python -m doctest -v README.md
+    - name: Run unit tests
+      run: |
+        python -m pytest
