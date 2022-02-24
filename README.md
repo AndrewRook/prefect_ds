@@ -1,3 +1,13 @@
+# Note
+This repo:
+* contains functionality which may have been incorporated into the core Prefect library (the Pandas serialization, for example, definitely has been).
+* is designed to work with what is now a _very_ old version of Prefect, and probably will **not** work with current versions.
+* is no longer maintained.
+
+Feel free to look around if you're curious for my thoughts on the kind of functionality that may be needed for data science workflows, or to see how I implemented things, but I would strongly recommend against attempting to use it as-is.
+
+The original README follows as-is below.
+
 # prefect DS
 Tools for making Prefect work better for typical data science workflows.
 
